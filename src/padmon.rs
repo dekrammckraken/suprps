@@ -49,6 +49,14 @@ impl PadMon {
                 Ok(mut child) => {
                     if let Ok(status) = child.wait() {
                         info!("{} exited with status {}", cfg.get_launcher(), status);
+
+                        if status.success() {
+                            info!("{} waited and stopped.", cfg.get_launcher());
+                        }
+                        else  {
+                            error!("{} cannot wait for launcher.", cfg.get_launcher())
+                        }
+                    
                         match self.disconnect_bluetooth_device(cfg) {
                             Ok(_) => info!("{} disconnected.", cfg.get_device()),
                             Err(_) => error!("{} failed to disconnect ", cfg.get_device()),
