@@ -49,6 +49,10 @@ impl PadMon {
                 Ok(mut child) => {
                     if let Ok(status) = child.wait() {
                         info!("{} exited with status {}", cfg.get_launcher(), status);
+                        match self.disconnect_bluetooth_device(cfg) {
+                            Ok(_) => info!("{} disconnected.", cfg.get_device()),
+                            Err(_) => error!("{} failed to disconnect ", cfg.get_device()),
+                        }
                     } else {
                         error!("Failed to wait for {} process!", cfg.get_launcher());
                     }
@@ -96,7 +100,7 @@ impl PadMon {
                     }
                 }
             }
-            info!("ascps has shut down. What a shame.");
+            info!("suprps has shut down. What a shame.");
         }
     }
 }

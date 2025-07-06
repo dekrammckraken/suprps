@@ -11,7 +11,9 @@ const CFG_FILE: &str = ".config/suprps/config";
 
 fn main() -> io::Result<()> {
     
-    JournalLog::new().expect("Log init failed");
+    JournalLog::new()?.install().expect("Failed log");
+
+    
     log::set_max_level(LevelFilter::Info);
     info!( "Starting suprps");
 
