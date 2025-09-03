@@ -16,6 +16,7 @@
 use log::{error, info};
 use nix::poll::{PollFd, PollFlags, PollTimeout, poll};
 use std::{io, os::fd::AsFd, process::Command};
+use zbus::{Connection, zvariant::OwnedObjectPath};
 
 use crate::config::Config;
 
@@ -46,7 +47,23 @@ impl PadMon {
             Err(io::Error::other("Disconnect failed"))
         }
     }
-    pub fn ensure_launcher_running(&self, cfg: &Config) {
+    pub async fn dbus_bluetooth_disconnect_device(&self, cfg: &Config) -> zbus::Result<()> {
+        let conn = Connection::system().await?;
+        let mac = cfg.get_mac().replace(":", "_");
+        let path = format!("/org/bluez/hci0/dev_{}", mac);
+
+        let proxy = zbus::Proxy::new(
+            &conn,
+            "org.bluez",
+            OwnedObjectPath::try_from(path)?,
+            "org.bluez.Device1",
+        )
+        .await?;
+
+        proxy.call_method("Disconnect", &()).await?;
+        Ok(())
+    }
+    pub async fn ensure_launcher_running(&self, cfg: &Config) {
         let running = Command::new("pgrep")
             .arg(&cfg.get_launcher())
             .output()
@@ -67,14 +84,13 @@ impl PadMon {
 
                         if status.success() {
                             info!("{} waited and stopped.", cfg.get_launcher());
-                        }
-                        else  {
+                        } else {
                             error!("{} cannot wait for launcher.", cfg.get_launcher())
                         }
-                    
-                        match self.disconnect_bluetooth_device(cfg) {
+
+                        match self.dbus_bluetooth_disconnect_device(cfg).await {
                             Ok(_) => info!("{} disconnected.", cfg.get_device()),
-                            Err(_) => error!("{} failed to disconnect ", cfg.get_device()),
+                            Err(e) => error!("{} failed to disconnect: {}", cfg.get_device(), e),
                         }
                     } else {
                         error!("Failed to wait for {} process!", cfg.get_launcher());
@@ -86,7 +102,7 @@ impl PadMon {
             }
         }
     }
-    pub fn begin_monitor(&mut self, cfg: &Config) -> io::Result<()> {
+    pub async fn begin_monitor(&mut self, cfg: &Config) -> io::Result<()> {
         let monitor = udev::MonitorBuilder::new()?
             .match_subsystem("input")?
             .listen()?;
@@ -111,7 +127,7 @@ impl PadMon {
                                     "{} We detected you pressed a button on your controller, didn’t you? Sorry, someone is playing instead of you.",
                                     cfg.get_device()
                                 );
-                                self.ensure_launcher_running(cfg);
+                                self.ensure_launcher_running(cfg).await;
                             }
                         }
                     } else if action == "remove" {

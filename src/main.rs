@@ -25,7 +25,8 @@ use padmon::PadMon;
 const CFG_FILE: &str = ".config/suprps/config";
 
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     
     JournalLog::new()?.install().expect("Failed log");
 
@@ -49,7 +50,7 @@ fn main() -> io::Result<()> {
         cfg.get_device(), cfg.get_mac(), cfg.get_launcher(),cfg.get_lounge().get_or_insert("NO")
     );
 
-    PadMon::new().begin_monitor(&cfg)?;
+    PadMon::new().begin_monitor(&cfg).await?;
     
     Ok(())
 
