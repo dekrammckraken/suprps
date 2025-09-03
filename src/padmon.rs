@@ -139,7 +139,6 @@ impl PadMon {
                     }
                 }
             }
-            info!("suprps has shut down. What a shame.");
         }
     }
 }
