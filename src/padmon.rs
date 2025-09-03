@@ -33,23 +33,10 @@ impl PadMon {
     pub fn is_begin_monitor(&self) -> bool {
         self.is_monitoring
     }
-    pub fn disconnect_bluetooth_device(&self, cfg: &Config) -> io::Result<()> {
-        let status = Command::new("bluetoothctl")
-            .arg("disconnect")
-            .arg(cfg.get_mac())
-            .status()?;
 
-        if status.success() {
-            info!("{} device disconnected!", cfg.get_mac());
-            Ok(())
-        } else {
-            error!("{} error while disconnecting device...", cfg.get_mac());
-            Err(io::Error::other("Disconnect failed"))
-        }
-    }
     pub async fn dbus_bluetooth_disconnect_device(&self, cfg: &Config) -> zbus::Result<()> {
         let conn = Connection::system().await?;
-        let mac = cfg.get_mac().replace(":", "_");
+        let mac = cfg.get_mac();
         let path = format!("/org/bluez/hci0/dev_{}", mac);
 
         let proxy = zbus::Proxy::new(
