@@ -19,6 +19,5 @@ Add this line to your Hyprland config: `exec-once = suprps`
 ## See log
 journalctl -e -t suprps -f
 
-Todo
 
-- native disconnection from device
+
